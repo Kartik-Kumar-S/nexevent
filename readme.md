@@ -203,47 +203,6 @@ NexEvent unifies event discovery, registration, ticketing, live engagement, voti
 
 ---
 
-## 🏗️ Architecture
-┌──────────────────────────────────────────────────────────────────┐
-│ FRONTEND │
-│ │
-│ React 18 + Vite + Tailwind CSS + shadcn/ui │
-│ ┌──────────┐ ┌──────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│ │ React │ │ TanStack │ │ Zustand │ │ WebSocket │ │
-│ │ Router │ │ Query v5 │ │ Store │ │ Client │ │
-│ └──────────┘ └──────────────┘ └─────────────┘ └──────┬──────┘ │
-│ │ │ │
-│ Deployed on: Vercel │ Axios + JWT Interceptors │ │
-└───────────────────────┼────────────────────────────────┼────────┘
-│ HTTPS (REST API) │ WSS
-▼ ▼
-┌──────────────────────────────────────────────────────────────────┐
-│ BACKEND │
-│ │
-│ Django 4.2 LTS + Gunicorn + Uvicorn (ASGI) │
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
-│ │ Django REST │ │ Django │ │ Celery 5 │ │
-│ │ Framework │ │ Channels 4 │ │ + django-celery-beat │ │
-│ │ + SimpleJWT │ │ + Daphne │ │ (async tasks) │ │
-│ └──────┬───────┘ └──────┬───────┘ └────────────┬─────────────┘ │
-│ │ │ │ │
-│ Deployed on: Railway │ │ │
-└─────────┼────────────────┼───────────────────────┼───────────────┘
-│ │ │
-▼ ▼ ▼
-┌─────────────────┐ ┌──────────┐ ┌─────────────────────────────────┐
-│ PostgreSQL 15 │ │ Redis 7 │ │ External Services │
-│ + pgvector │ │ (Cache, │ │ ┌─────────┐ ┌───────────────┐ │
-│ + pg_trgm │ │ Broker, │ │ │ OpenAI │ │ Polygon │ │
-│ │ │ WS) │ │ │ API │ │ Blockchain │ │
-│ │ │ │ │ ├─────────┤ ├───────────────┤ │
-│ │ │ │ │ │ Stripe/ │ │ SendGrid/ │ │
-│ │ │ │ │ │ Razorpay│ │ Twilio │ │
-│ │ │ │ │ └─────────┘ └───────────────┘ │
-└─────────────────┘ └──────────┘ └─────────────────────────────────┘
-
----
-
 ## 👥 User Roles & Permissions
 
 | Permission | Student | Organizer | Admin |
