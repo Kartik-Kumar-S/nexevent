@@ -1,0 +1,3 @@
+# Force Git to use Linux line endings (LF) for all text files
+# This prevents Docker container crashes on Windows machines
+* text=auto eol=lf

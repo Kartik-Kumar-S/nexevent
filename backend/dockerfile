@@ -1,0 +1,27 @@
+# ---- Stage: Python 3.11 slim base ----
+FROM python:3.11-slim
+
+# Prevent Python from writing .pyc files and enable real-time log output
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Install system-level dependencies required by psycopg2
+# libpq-dev: PostgreSQL client library headers
+# build-essential: C compiler for any native extensions
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential \
+       libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies FIRST (Docker layer caching —
+# this layer only rebuilds when requirements.txt changes)
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application code
+COPY . .

@@ -1,0 +1,12 @@
+# Core Framework
+Django>=4.2,<4.3              # LTS — security patches until April 2026
+djangorestframework>=3.15,<4.0 # REST API layer
+
+# Database
+psycopg2-binary>=2.9,<3.0     # PostgreSQL adapter (binary = no C compiler needed)
+
+# Configuration
+python-decouple>=3.8,<4.0     # Type-safe env var reading with defaults
+
+# Security / Middleware
+django-cors-headers>=4.0,<5.0 # Allow React dev server (localhost:5173) to call API
