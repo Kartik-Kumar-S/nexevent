@@ -37,11 +37,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'event_app',
+    'accounts',
+    
 
     # ---- Third-party ----
     'rest_framework',
     'corsheaders',
+    'rest_framework_simplejwt',            
+    'rest_framework_simplejwt.token_blacklist',  
+    'axes',   
 ]
 
 MIDDLEWARE = [
@@ -53,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -137,7 +142,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ============================================
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',  # Secure by default
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
@@ -150,3 +158,40 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',  # Vite default dev port
     'http://127.0.0.1:5173',
 ]
+AUTH_USER_MODEL = 'accounts.User'
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+
+    
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+
+   
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+
+  
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+
+   
+    'TOKEN_OBTAIN_SERIALIZER': 'accounts.serializers.CustomTokenObtainPairSerializer',
+
+   
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+
+AXES_FAILURE_LIMIT = 100           # Lock after 100 failed attempts
+AXES_COOLOFF_TIME = timedelta(minutes=1)  # Auto-unlock after 30 minutes
+AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock specific user+IP combo
+AXES_RESET_ON_SUCCESS = True      # Reset failure count on successful login
+AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]

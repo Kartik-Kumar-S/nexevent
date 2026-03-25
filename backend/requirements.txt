@@ -10,3 +10,9 @@ python-decouple>=3.8,<4.0     # Type-safe env var reading with defaults
 
 # Security / Middleware
 django-cors-headers>=4.0,<5.0 # Allow React dev server (localhost:5173) to call API
+
+# Authentication
+djangorestframework-simplejwt>=5.3,<6.0  # JWT token authentication
+
+# Brute-force protection
+django-axes>=6.0,<7.0         # Login attempt throttling
