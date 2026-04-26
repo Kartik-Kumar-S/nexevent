@@ -103,3 +103,38 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_admin(self):
         return self.role == self.Role.ADMIN
+
+
+class RoleChangeRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING'
+        APPROVED = 'APPROVED'
+        REJECTED = 'REJECTED'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='role_requests')
+    current_role = models.IntegerField()
+    requested_role = models.IntegerField()
+    justification = models.TextField()
+    documents_url = models.URLField(blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='reviewed_requests')
+    review_comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    cooldown_until = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.email} -> {self.requested_role} ({self.status})"
+
+
+class AuditLog(models.Model):
+    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=100)  # e.g. 'login', 'logout', 'password_reset', 'role_request_submitted'
+    entity_type = models.CharField(max_length=50, blank=True)
+    entity_id = models.UUIDField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True)
+    device = models.TextField(blank=True)  # User-Agent header
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.action} at {self.created_at}"

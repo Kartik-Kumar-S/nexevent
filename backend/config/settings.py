@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'event_registration',
     'payment',
     'ticket',
+    'certificates',
     
 
     # ---- Third-party ----
@@ -156,6 +157,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'EXCEPTION_HANDLER': 'accounts.utils.custom_exception_handler',
 }
 
 # ============================================
@@ -197,10 +199,9 @@ SIMPLE_JWT = {
 }
 
 
-AXES_FAILURE_LIMIT = 100           # Lock after 100 failed attempts
-AXES_COOLOFF_TIME = timedelta(minutes=1)  # Auto-unlock after 30 minutes
-AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock specific user+IP combo
-AXES_RESET_ON_SUCCESS = True      # Reset failure count on successful login
+AXES_FAILURE_LIMIT = 5           
+AXES_COOLOFF_TIME = timedelta(minutes=1)  
+AXES_RESET_ON_SUCCESS = True      
 AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]
 
 
@@ -209,3 +210,9 @@ RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Add to the bottom of settings.py for local testing
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_BROKER_URL = 'memory://'
+CELERY_RESULT_BACKEND = 'cache+memory://'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

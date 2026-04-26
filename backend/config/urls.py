@@ -27,7 +27,8 @@ urlpatterns = [
     path('api/events/', include('event_app.urls')),
     path("api/registrations/", include("event_registration.urls")),
     path("api/payments/", include("payment.urls")),
-    path("api/tickets/", include("ticket.urls")),  
+    path("api/tickets/", include("ticket.urls")),
+    path("api/certificates/", include("certificates.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(

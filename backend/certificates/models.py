@@ -50,12 +50,12 @@ class Certificate(models.Model):
         related_name='certificates'
     )
     event = models.ForeignKey(
-        'events.Event',
+        'event_app.Event',
         on_delete=models.CASCADE,
         related_name='certificates'
     )
     registration = models.OneToOneField(
-        'registrations.Registration',
+        'event_registration.Registration',
         on_delete=models.CASCADE,
         related_name='certificate'
     )

@@ -84,7 +84,71 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         data = super().validate(attrs)
 
+        if not self.user.is_verified:
+            from rest_framework.exceptions import AuthenticationFailed
+            raise AuthenticationFailed('Please verify your email before logging in.')
+
         # Add user profile to login response
         data['user'] = UserProfileSerializer(self.user).data
 
         return data
+
+class VerifyEmailSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+class ResendVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        validators=[validate_password],
+        style={'input_type': 'password'},
+    )
+    confirm_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        style={'input_type': 'password'},
+    )
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({
+                'confirm_password': 'Passwords do not match.'
+            })
+        return attrs
+
+from .models import RoleChangeRequest, AuditLog
+
+class RoleChangeRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoleChangeRequest
+        fields = [
+            'id', 'current_role', 'requested_role', 'justification',
+            'documents_url', 'status', 'review_comment', 'created_at',
+            'reviewed_at'
+        ]
+        read_only_fields = [
+            'id', 'current_role', 'status', 'review_comment',
+            'created_at', 'reviewed_at'
+        ]
+
+    def validate_requested_role(self, value):
+        if value != User.Role.ORGANIZER:
+            raise serializers.ValidationError("You can only request the ORGANIZER role.")
+        return value
+
+class RoleChangeRequestReviewSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=['approve', 'reject'])
+    comment = serializers.CharField(allow_blank=True, required=False)
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    class Meta:
+        model = AuditLog
+        fields = '__all__'
