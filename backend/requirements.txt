@@ -16,3 +16,8 @@ djangorestframework-simplejwt>=5.3,<6.0  # JWT token authentication
 
 # Brute-force protection
 django-axes>=6.0,<7.0         # Login attempt throttling
+
+razorpay==1.4.1
+Pillow==12.2.0
+
+qrcode[pil]==7.4.2

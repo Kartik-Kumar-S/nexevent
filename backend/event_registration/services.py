@@ -1,77 +1,95 @@
 from django.db import transaction
+from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .models import Registration, WaitlistEntry
-from event_app.models import Event
 
-class RegistrationService:
+from event_app.models import Event
+from .models import Registration
+
+
+SEAT_HOLDING_STATUSES = ["PENDING_PAYMENT", "CONFIRMED"]
+
+
+def get_seat_holding_count(event):
+    return Registration.objects.filter(
+        event=event,
+        status__in=SEAT_HOLDING_STATUSES
+    ).count()
+
+
+@transaction.atomic
+def register_user_for_event(student, event_id):
+    """Register student for event."""
+    event = Event.objects.select_for_update().get(id=event_id)
+
+    if hasattr(event, "is_approved") and not event.is_approved:
+        raise ValidationError("Event is not approved yet.")
+
+    if Registration.objects.filter(student=student, event=event).exists():
+        raise ValidationError("Already registered.")
+
+    occupied_seats = get_seat_holding_count(event)
+
+    razorpay_order = None
+
+    if occupied_seats < event.capacity:
+        status = "PENDING_PAYMENT"
+    else:
+        status = "WAITLISTED"
+
+    registration = Registration.objects.create(
+        student=student,
+        event=event,
+        status=status
+    )
+
+    if status == "PENDING_PAYMENT":
+        from payment.services import create_razorpay_order
+        razorpay_order = create_razorpay_order(registration)
+
+    return registration, razorpay_order
+
+
+@transaction.atomic
+def cancel_registration(registration):
+    event = Event.objects.select_for_update().get(id=registration.event.id)
+
+    if registration.status == "CANCELLED":
+        raise ValidationError("Already cancelled.")
+
+    was_holding_seat = registration.status in SEAT_HOLDING_STATUSES
+
+    registration.status = "CANCELLED"
+    registration.cancelled_at = timezone.now()
+    registration.save(update_fields=["status", "cancelled_at"])
+
     
-    @staticmethod
-    def register_for_event(event_id, student):
-        with transaction.atomic():
-            # event_id is UUID, Event.id is UUIDField
-            event = Event.objects.select_for_update().get(id=event_id)
-            
-            # status must be 'published' to accept registrations
-            if event.status != 'published':
-                raise ValueError("Event is not approved for registration")
-            
-            # already registered?
-            if Registration.objects.filter(event=event, student=student).exists():
-                raise ValueError("You are already registered for this event")
-            
-            # already on waitlist?
-            if WaitlistEntry.objects.filter(event=event, student=student).exists():
-                raise ValueError("You are already on the waitlist")
-            
-            # how many confirmed registrations?
-            current_count = Registration.objects.filter(
-                event=event,
-                status='registered'
-            ).count()
-            
-            # IMPORTANT: use your real capacity field name
-            if current_count < event.capacity:   # field name from your JSON
-                registration = Registration.objects.create(
-                    event=event,
-                    student=student,
-                    status='registered'
-                )
-                return {'type': 'registration', 'object': registration}
-            else:
-                next_position = WaitlistEntry.objects.filter(event=event).count() + 1
-                waitlist_entry = WaitlistEntry.objects.create(
-                    event=event,
-                    student=student,
-                    position=next_position
-                )
-                return {'type': 'waitlist', 'object': waitlist_entry}
-    
-    @staticmethod
-    def cancel_registration(registration):
-        with transaction.atomic():
-            registration.status = 'cancelled'
-            registration.cancelled_at = timezone.now()
-            registration.save()
-            RegistrationService.promote_from_waitlist(registration.event)
-            return registration
-    
-    @staticmethod
-    def promote_from_waitlist(event):
-        waitlist_entry = WaitlistEntry.objects.filter(event=event).first()
-        
-        if waitlist_entry:
-            Registration.objects.create(
-                event=event,
-                student=waitlist_entry.student,
-                status='registered'
-            )
-            
-            waitlist_entry.delete()
-            
-            remaining = WaitlistEntry.objects.filter(event=event).order_by('position')
-            for idx, entry in enumerate(remaining, start=1):
-                entry.position = idx
-                entry.save()
-            
-            return True
-        return False
+    return promote_waitlisted_user(event)
+
+@transaction.atomic
+def promote_waitlisted_user(event):
+    """Promote first waitlisted student."""
+    event = Event.objects.select_for_update().get(id=event.id)
+
+    occupied_seats = get_seat_holding_count(event)
+
+    if occupied_seats >= event.capacity:
+        return None
+
+    next_waitlisted = (
+        Registration.objects
+        .select_for_update()
+        .filter(event=event, status="WAITLISTED")
+        .order_by("registered_at")
+        .first()
+    )
+
+    if not next_waitlisted:
+        return None
+
+    next_waitlisted.status = "PENDING_PAYMENT"
+    next_waitlisted.save(update_fields=["status"])
+
+    from payment.services import create_razorpay_order
+    razorpay_order = create_razorpay_order(next_waitlisted)
+
+    return next_waitlisted, razorpay_order

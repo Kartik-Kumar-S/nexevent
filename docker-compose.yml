@@ -4,6 +4,7 @@ services:
     image: postgres:15-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data  # Persist data across restarts
+      - ./media:/app/media
     env_file:
       - .env  # Injects POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
     ports:
@@ -30,3 +31,5 @@ services:
 
 volumes:
   postgres_data:  # Named volume — survives docker-compose down
+
+  

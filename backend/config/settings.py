@@ -9,9 +9,11 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+import os
 
 from pathlib import Path
 from decouple import config, Csv 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,6 +42,8 @@ INSTALLED_APPS = [
     'accounts',
     'event_app',
     'event_registration',
+    'payment',
+    'ticket',
     
 
     # ---- Third-party ----
@@ -48,6 +52,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',            
     'rest_framework_simplejwt.token_blacklist',  
     'axes',   
+    
 ]
 
 MIDDLEWARE = [
@@ -144,7 +149,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ============================================
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-    'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -171,7 +176,7 @@ from datetime import timedelta
 
 SIMPLE_JWT = {
     
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=360),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
 
     
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -197,3 +202,10 @@ AXES_COOLOFF_TIME = timedelta(minutes=1)  # Auto-unlock after 30 minutes
 AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock specific user+IP combo
 AXES_RESET_ON_SUCCESS = True      # Reset failure count on successful login
 AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]
+
+
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

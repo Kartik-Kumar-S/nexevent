@@ -19,6 +19,7 @@ class EventSerializer(serializers.ModelSerializer):
             'location',
             'capacity',
             'category',
+            'price',
             'status',
             'created_at',
             'updated_at',
